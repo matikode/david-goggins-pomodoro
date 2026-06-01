@@ -56,7 +56,8 @@
       workDuration: DEFAULT_WORK,
       breakDuration: DEFAULT_BREAK,
       longBreakDuration: DEFAULT_LONG_BREAK,
-      soundEnabled: true
+      soundEnabled: true,
+      extremeMode: false
     };
   }
 
@@ -80,6 +81,37 @@
     } catch (e) {}
   }
 
+  function calculateStats() {
+    const totalMinutes = historyData.reduce(function(acc, curr) { return acc + curr.duration; }, 0);
+    const soulsTaken = (totalMinutes / 60).toFixed(1);
+    
+    let streak = 0;
+    if (historyData.length > 0) {
+      const dates = historyData.map(function(e) { return new Date(e.timestamp).toDateString(); });
+      const uniqueDates = Array.from(new Set(dates));
+      
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (uniqueDates.includes(today.toDateString()) || uniqueDates.includes(yesterday.toDateString())) {
+        streak = 1;
+        let checkDate = new Date(uniqueDates[0]); // Most recent
+        for (let i = 1; i < uniqueDates.length; i++) {
+          checkDate.setDate(checkDate.getDate() - 1);
+          if (uniqueDates[i] === checkDate.toDateString()) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+    
+    dom.soulsTakenVal.innerHTML = soulsTaken + '<small>h</small>';
+    dom.streakVal.innerHTML = streak + '<small>d</small>';
+  }
+
   function addHistoryEntry(duration) {
     const entry = {
       timestamp: new Date().toISOString(),
@@ -90,6 +122,8 @@
   }
 
   function renderHistory() {
+    calculateStats();
+    
     if (historyData.length === 0) {
       dom.historyList.innerHTML = '<div class="history-empty">No sessions completed yet. Get after it!</div>';
       return;
@@ -140,6 +174,13 @@
     dom.breakValue = document.getElementById('breakValue');
     dom.longBreakValue = document.getElementById('longBreakValue');
     dom.soundToggle = document.getElementById('soundToggle');
+    dom.extremeToggle = document.getElementById('extremeToggle');
+    dom.fullscreenBtn = document.getElementById('fullscreenBtn');
+    dom.soulsTakenVal = document.getElementById('soulsTakenVal');
+    dom.streakVal = document.getElementById('streakVal');
+    dom.quitModal = document.getElementById('quitModal');
+    dom.punishBtn = document.getElementById('punishBtn');
+    dom.cancelQuitBtn = document.getElementById('cancelQuitBtn');
   }
 
   function formatTime(seconds) {
@@ -154,6 +195,15 @@
     const fraction = state.totalTime > 0 ? state.timeRemaining / state.totalTime : 1;
     const offset = CIRCUMFERENCE * (1 - fraction);
     dom.ringProgress.setAttribute('stroke-dashoffset', offset);
+
+    // Cookie Jar Mode (last 5 mins of work)
+    const isCookieJar = state.sessionType === 'work' && state.timeRemaining <= 300 && state.timeRemaining > 0;
+    document.body.classList.toggle('cookie-jar-mode', isCookieJar);
+    if (isCookieJar) {
+      startHeartbeat();
+    } else {
+      stopHeartbeat();
+    }
 
     const modeLabel = state.sessionType === 'work' ? 'WORK' : 'BREAK';
     document.title = formatTime(state.timeRemaining) + ' \u2014 ' + modeLabel + ' | Goggins Pomodoro';
@@ -241,6 +291,27 @@
     } catch (e) {}
   }
 
+  function playClickSound() {
+    if (!settings.soundEnabled) return;
+    try {
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+      
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.05);
+    } catch (e) {}
+  }
+
   function speak(text) {
     if (!settings.soundEnabled) return;
 
@@ -300,6 +371,40 @@
     window.speechSynthesis.speak(utterance);
   }
 
+  let heartbeatInterval = null;
+  function playHeartbeatTone() {
+    if (!settings.soundEnabled) return;
+    try {
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(50, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.1);
+    } catch(e) {}
+  }
+
+  function startHeartbeat() {
+    if (heartbeatInterval) return;
+    heartbeatInterval = setInterval(function() {
+      playHeartbeatTone();
+      setTimeout(playHeartbeatTone, 150);
+    }, 1000);
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+  }
+
   function getSessionDuration() {
     if (state.sessionType === 'work') return settings.workDuration * 60;
     const cyclePosition = state.completedPomodoros % POMODOROS_BEFORE_LONG;
@@ -334,6 +439,22 @@
 
     state.intervalId = setInterval(tick, 1000);
     updateDisplay();
+  }
+
+  function attemptReset() {
+    if (settings.extremeMode && state.mode === 'running') {
+      openQuitModal();
+    } else {
+      resetTimer();
+    }
+  }
+
+  function attemptSkip() {
+    if (settings.extremeMode && state.mode === 'running') {
+      openQuitModal();
+    } else {
+      skipSession();
+    }
   }
 
   function pauseTimer() {
@@ -433,7 +554,7 @@
         break;
       case 'running':
         dom.startBtn.style.display = 'none';
-        dom.pauseBtn.style.display = '';
+        dom.pauseBtn.style.display = settings.extremeMode ? 'none' : '';
         break;
       case 'paused':
         dom.startBtn.style.display = '';
@@ -451,6 +572,7 @@
     dom.breakValue.textContent = settings.breakDuration;
     dom.longBreakValue.textContent = settings.longBreakDuration;
     dom.soundToggle.checked = settings.soundEnabled;
+    dom.extremeToggle.checked = settings.extremeMode;
     updateMuteButton();
 
     dom.settingsModal.classList.add('open');
@@ -469,8 +591,13 @@
     settings.breakDuration = parseInt(dom.breakSlider.value);
     settings.longBreakDuration = parseInt(dom.longBreakSlider.value);
     settings.soundEnabled = dom.soundToggle.checked;
+    
+    const extremeChanged = settings.extremeMode !== dom.extremeToggle.checked;
+    settings.extremeMode = dom.extremeToggle.checked;
+    
     saveSettings();
     updateMuteButton();
+    if (extremeChanged) updateButtons();
 
     if (changed && state.mode === 'idle') {
       if (state.sessionType === 'work') {
@@ -502,6 +629,26 @@
     }
   }
 
+  function openQuitModal() {
+    dom.quitModal.classList.add('open');
+    dom.quitModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeQuitModal() {
+    dom.quitModal.classList.remove('open');
+    dom.quitModal.setAttribute('aria-hidden', 'true');
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }
+
   function updateMuteButton() {
     dom.muteBtn.classList.toggle('muted', !settings.soundEnabled);
   }
@@ -514,10 +661,15 @@
   }
 
   function bindEvents() {
+    // Add click sound to all buttons
+    document.querySelectorAll('.btn, .btn-icon').forEach(function(btn) {
+      btn.addEventListener('mousedown', playClickSound);
+    });
+
     dom.startBtn.addEventListener('click', startTimer);
     dom.pauseBtn.addEventListener('click', pauseTimer);
-    dom.resetBtn.addEventListener('click', resetTimer);
-    dom.skipBtn.addEventListener('click', skipSession);
+    dom.resetBtn.addEventListener('click', attemptReset);
+    dom.skipBtn.addEventListener('click', attemptSkip);
     dom.muteBtn.addEventListener('click', toggleMute);
     dom.settingsBtn.addEventListener('click', openSettings);
     dom.closeSettings.addEventListener('click', closeSettings);
@@ -525,6 +677,28 @@
     dom.historyBtn.addEventListener('click', openHistoryModal);
     dom.closeHistory.addEventListener('click', closeHistoryModal);
     dom.clearHistoryBtn.addEventListener('click', clearHistory);
+    dom.fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    let holdTimeout;
+    dom.punishBtn.addEventListener('mousedown', function() {
+      dom.punishBtn.classList.add('holding');
+      holdTimeout = setTimeout(function() {
+        resetTimer();
+        closeQuitModal();
+      }, 3000);
+    });
+    
+    dom.punishBtn.addEventListener('mouseup', function() {
+      clearTimeout(holdTimeout);
+      dom.punishBtn.classList.remove('holding');
+    });
+    
+    dom.punishBtn.addEventListener('mouseleave', function() {
+      clearTimeout(holdTimeout);
+      dom.punishBtn.classList.remove('holding');
+    });
+
+    dom.cancelQuitBtn.addEventListener('click', closeQuitModal);
 
     dom.settingsModal.addEventListener('click', function (e) {
       if (e.target === dom.settingsModal) closeSettings();

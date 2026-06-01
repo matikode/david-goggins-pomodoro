@@ -34,6 +34,14 @@
             <line x1="17" y1="9" x2="23" y2="15"></line>
           </svg>
         </button>
+        <button class="btn-icon fullscreen-btn" id="fullscreenBtn" aria-label="Fullscreen" title="Fullscreen">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
         <button class="btn-icon history-btn" id="historyBtn" aria-label="History" title="History">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="12 8 12 12 14 14"></polyline>
@@ -152,6 +160,17 @@
             <span class="switch-track"></span>
           </label>
         </div>
+
+        <div class="setting-group setting-toggle">
+          <label class="setting-label" for="extremeToggle">
+            Extreme Mode 
+            <small style="display:block; font-size: 0.75rem; color: #ff3333; margin-top: 4px;">No Pause. No Mercy.</small>
+          </label>
+          <label class="switch switch-extreme">
+            <input type="checkbox" id="extremeToggle">
+            <span class="switch-track"></span>
+          </label>
+        </div>
       </div>
     </div>
   </div>
@@ -169,6 +188,17 @@
       </div>
 
       <div class="modal-body">
+        <div class="stats-dashboard">
+          <div class="stat-box">
+            <div class="stat-label">SOULS TAKEN</div>
+            <div class="stat-value" id="soulsTakenVal">0.0<small>h</small></div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">CURRENT STREAK</div>
+            <div class="stat-value" id="streakVal">0<small>d</small></div>
+          </div>
+        </div>
+
         <div id="historyList" class="history-list">
           <!-- History items will be generated here -->
         </div>
@@ -176,6 +206,24 @@
       
       <div class="modal-footer" style="margin-top: 1.5rem; text-align: center;">
         <button class="btn btn-reset" id="clearHistoryBtn" style="font-size: 0.9rem; padding: 0.5rem 1rem;">CLEAR HISTORY</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="quitModal" aria-hidden="true" role="dialog" aria-labelledby="quitTitle">
+    <div class="modal modal-extreme">
+      <div class="modal-header">
+        <h2 class="modal-title" id="quitTitle" style="color: #ff3333; font-size: 2rem; width: 100%; text-align: center;">ARE YOU RUNNING AWAY?</h2>
+      </div>
+      <div class="modal-body" style="text-align: center; margin-top: 1rem;">
+        <p style="color: var(--color-text-muted); margin-bottom: 2rem;">Cowards quit when it hurts. If you want to reset this timer, you have to admit you are weak.</p>
+        <button class="btn btn-punish" id="punishBtn">
+          <span class="punish-text">HOLD TO QUIT: I AM WEAK</span>
+          <div class="punish-fill" id="punishFill"></div>
+        </button>
+        <div style="margin-top: 1.5rem;">
+          <button class="btn-icon" id="cancelQuitBtn" style="color: var(--color-text-muted); font-size: 0.8rem; width: auto; padding: 0.5rem 1rem;">Nevermind. Back to work.</button>
+        </div>
       </div>
     </div>
   </div>
