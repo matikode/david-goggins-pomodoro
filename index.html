@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>25:00 — WORK | Goggins Pomodoro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="bg-image" aria-hidden="true">
+    <img src="assets/goggins.jpg" alt="" onerror="this.style.display='none'">
+    <div class="bg-overlay"></div>
+  </div>
+
+  <main class="app" role="main">
+
+    <header class="header">
+      <h1 class="title">STAY HARD</h1>
+      <div class="header-actions">
+        <button class="btn-icon mute-btn" id="muteBtn" aria-label="Toggle sound" title="Toggle sound">
+          <svg class="icon-sound" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path class="sound-waves" d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path class="sound-waves" d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg class="icon-muted" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+        <button class="btn-icon history-btn" id="historyBtn" aria-label="History" title="History">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="12 8 12 12 14 14"></polyline>
+            <circle cx="12" cy="12" r="10"></circle>
+          </svg>
+        </button>
+        <button class="btn-icon settings-btn" id="settingsBtn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="timer-section" aria-label="Pomodoro timer">
+      <div class="timer-mode" id="timerMode">WORK</div>
+
+      <div class="timer-ring-container">
+        <svg class="timer-ring" viewBox="0 0 200 200" role="timer" aria-live="polite" aria-atomic="true">
+          <circle class="ring-bg" cx="100" cy="100" r="90" />
+          <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="90"
+            stroke-dasharray="565.49" stroke-dashoffset="0"
+            transform="rotate(-90 100 100)" />
+        </svg>
+        <div class="timer-display">
+          <span class="time-text" id="timeDisplay">25:00</span>
+        </div>
+      </div>
+
+      <div class="dog-tags" id="dogTags" aria-label="Completed pomodoros">
+        <div class="dog-tag" data-index="0">
+          <svg viewBox="0 0 30 42" width="26" height="36">
+            <rect class="tag-shape" x="2" y="10" width="26" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <circle class="tag-hole" cx="15" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line class="tag-chain" x1="15" y1="8" x2="15" y2="10" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="dog-tag" data-index="1">
+          <svg viewBox="0 0 30 42" width="26" height="36">
+            <rect class="tag-shape" x="2" y="10" width="26" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <circle class="tag-hole" cx="15" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line class="tag-chain" x1="15" y1="8" x2="15" y2="10" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="dog-tag" data-index="2">
+          <svg viewBox="0 0 30 42" width="26" height="36">
+            <rect class="tag-shape" x="2" y="10" width="26" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <circle class="tag-hole" cx="15" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line class="tag-chain" x1="15" y1="8" x2="15" y2="10" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="dog-tag" data-index="3">
+          <svg viewBox="0 0 30 42" width="26" height="36">
+            <rect class="tag-shape" x="2" y="10" width="26" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <circle class="tag-hole" cx="15" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line class="tag-chain" x1="15" y1="8" x2="15" y2="10" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="quote-display" id="quoteDisplay" aria-live="polite"></div>
+    </section>
+
+    <nav class="controls" aria-label="Timer controls">
+      <button class="btn btn-start" id="startBtn" aria-label="Start timer">START</button>
+      <button class="btn btn-pause" id="pauseBtn" aria-label="Pause timer" style="display:none">PAUSE</button>
+      <button class="btn btn-reset" id="resetBtn" aria-label="Reset timer">RESET</button>
+      <button class="btn btn-skip" id="skipBtn" aria-label="Skip to next session">SKIP</button>
+    </nav>
+
+  </main>
+
+  <div class="modal-overlay" id="settingsModal" aria-hidden="true" role="dialog" aria-labelledby="settingsTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="settingsTitle">SETTINGS</h2>
+        <button class="btn-icon modal-close" id="closeSettings" aria-label="Close settings">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="setting-group">
+          <label class="setting-label" for="workSlider">
+            Work Duration: <span id="workValue">25</span> min
+          </label>
+          <input type="range" id="workSlider" min="15" max="60" value="25" step="5" class="slider">
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label" for="breakSlider">
+            Break Duration: <span id="breakValue">5</span> min
+          </label>
+          <input type="range" id="breakSlider" min="1" max="15" value="5" step="1" class="slider">
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label" for="longBreakSlider">
+            Long Break Duration: <span id="longBreakValue">15</span> min
+          </label>
+          <input type="range" id="longBreakSlider" min="5" max="30" value="15" step="5" class="slider">
+        </div>
+
+        <div class="setting-group setting-toggle">
+          <label class="setting-label" for="soundToggle">Sound</label>
+          <label class="switch">
+            <input type="checkbox" id="soundToggle" checked>
+            <span class="switch-track"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="historyModal" aria-hidden="true" role="dialog" aria-labelledby="historyTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="historyTitle">HISTORY</h2>
+        <button class="btn-icon modal-close" id="closeHistory" aria-label="Close history">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div id="historyList" class="history-list">
+          <!-- History items will be generated here -->
+        </div>
+      </div>
+      
+      <div class="modal-footer" style="margin-top: 1.5rem; text-align: center;">
+        <button class="btn btn-reset" id="clearHistoryBtn" style="font-size: 0.9rem; padding: 0.5rem 1rem;">CLEAR HISTORY</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
