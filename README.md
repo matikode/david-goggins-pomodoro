@@ -37,3 +37,8 @@ El código detectará automáticamente si el archivo existe y lo reproducirá; d
 ---
 
 > *"Don't stop when you're tired. Stop when you're done."*
+
+<p align="center">
+  <br>
+  <small>Built by <a href="https://github.com/matikode">matikode</a></small>
+</p>
