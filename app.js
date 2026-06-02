@@ -44,6 +44,7 @@
 
   const dom = {};
   let audioCtx = null;
+  let masterVolume = settings.volume !== undefined ? settings.volume : 0.8;
 
   function loadSettings() {
     try {
@@ -57,7 +58,8 @@
       breakDuration: DEFAULT_BREAK,
       longBreakDuration: DEFAULT_LONG_BREAK,
       soundEnabled: true,
-      extremeMode: false
+      extremeMode: false,
+      volume: 0.8
     };
   }
 
@@ -88,7 +90,9 @@
     let streak = 0;
     if (historyData.length > 0) {
       const dates = historyData.map(function(e) { return new Date(e.timestamp).toDateString(); });
-      const uniqueDates = Array.from(new Set(dates));
+      const uniqueDates = Array.from(new Set(dates)).sort(function(a, b) {
+        return new Date(b) - new Date(a);
+      });
       
       const today = new Date();
       const yesterday = new Date(today);
@@ -117,7 +121,10 @@
       timestamp: new Date().toISOString(),
       duration: duration
     };
-    historyData.unshift(entry); // Add to beginning
+    historyData.unshift(entry);
+    if (historyData.length > 100) {
+      historyData = historyData.slice(0, 100);
+    }
     saveHistory();
   }
 
@@ -181,6 +188,8 @@
     dom.quitModal = document.getElementById('quitModal');
     dom.punishBtn = document.getElementById('punishBtn');
     dom.cancelQuitBtn = document.getElementById('cancelQuitBtn');
+    dom.volumeSlider = document.getElementById('volumeSlider');
+    dom.volumeValue = document.getElementById('volumeValue');
   }
 
   function formatTime(seconds) {
@@ -196,8 +205,8 @@
     const offset = CIRCUMFERENCE * (1 - fraction);
     dom.ringProgress.setAttribute('stroke-dashoffset', offset);
 
-    // Cookie Jar Mode (last 5 mins of work)
-    const isCookieJar = state.sessionType === 'work' && state.timeRemaining <= 300 && state.timeRemaining > 0;
+    // Cookie Jar Mode (last 30 seconds of work)
+    const isCookieJar = state.sessionType === 'work' && state.timeRemaining <= 30 && state.timeRemaining > 0;
     document.body.classList.toggle('cookie-jar-mode', isCookieJar);
     if (isCookieJar) {
       startHeartbeat();
@@ -212,6 +221,7 @@
     dom.timerMode.textContent = modeLabel;
     dom.timerMode.classList.toggle('break-mode', isBreak);
     dom.ringProgress.classList.toggle('break-mode', isBreak);
+    document.body.classList.toggle('break-active', isBreak);
 
     const isFlashing = state.mode === 'running' && state.timeRemaining <= 10 && state.timeRemaining > 0;
     dom.ringContainer.classList.toggle('flashing', isFlashing);
@@ -253,7 +263,7 @@
       const gain = ctx.createGain();
       osc.type = type || 'square';
       osc.frequency.value = freq;
-      gain.gain.value = volume || 0.15;
+      gain.gain.value = (volume || 0.15) * masterVolume;
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -278,7 +288,7 @@
         osc2.type = 'sawtooth';
         osc1.frequency.value = 440;
         osc2.frequency.value = 880;
-        gain.gain.value = 0.12;
+        gain.gain.value = 0.12 * masterVolume;
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4 + i * 0.5);
         osc1.connect(gain);
         osc2.connect(gain);
@@ -302,7 +312,7 @@
       osc.frequency.setValueAtTime(400, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
       
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15 * masterVolume, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
       
       osc.connect(gain);
@@ -334,6 +344,7 @@
 
     if (audioPath) {
       const audio = new Audio(audioPath);
+      audio.volume = masterVolume;
       
       // Intentamos reproducir el archivo de audio real
       audio.play().then(() => {
@@ -355,7 +366,7 @@
     utterance.lang = 'en-US';
     utterance.rate = 0.85;
     utterance.pitch = 0.6;
-    utterance.volume = 1;
+    utterance.volume = masterVolume;
     const voices = window.speechSynthesis.getVoices();
     const deepVoice = voices.find(function (v) {
       return v.lang.startsWith('en') && v.name.toLowerCase().includes('male');
@@ -381,7 +392,7 @@
       osc.type = 'sine';
       osc.frequency.setValueAtTime(50, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.setValueAtTime(0.4 * masterVolume, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -475,6 +486,8 @@
     state.totalTime = settings.workDuration * 60;
     state.timeRemaining = state.totalTime;
     state.completedPomodoros = 0;
+    stopHeartbeat();
+    document.body.classList.remove('cookie-jar-mode');
     hideQuote();
     updateButtons();
     updateDogTags();
@@ -517,6 +530,11 @@
     updateButtons();
     updateDisplay();
 
+    sendNotification(
+      state.sessionType === 'work' ? '💀 Back to work!' : '🏆 Session complete!',
+      state.sessionType === 'work' ? 'Break is over. Stay hard!' : 'Take a break. You earned it.'
+    );
+
     state.autoStartTimeout = setTimeout(function () {
       if (state.mode === 'idle') {
         startTimer();
@@ -549,15 +567,18 @@
     switch (state.mode) {
       case 'idle':
         dom.startBtn.style.display = '';
+        dom.startBtn.classList.add('idle-pulse');
         dom.pauseBtn.style.display = 'none';
         dom.startBtn.textContent = state.timeRemaining < state.totalTime ? 'RESUME' : 'START';
         break;
       case 'running':
         dom.startBtn.style.display = 'none';
+        dom.startBtn.classList.remove('idle-pulse');
         dom.pauseBtn.style.display = settings.extremeMode ? 'none' : '';
         break;
       case 'paused':
         dom.startBtn.style.display = '';
+        dom.startBtn.classList.remove('idle-pulse');
         dom.pauseBtn.style.display = 'none';
         dom.startBtn.textContent = 'RESUME';
         break;
@@ -573,6 +594,8 @@
     dom.longBreakValue.textContent = settings.longBreakDuration;
     dom.soundToggle.checked = settings.soundEnabled;
     dom.extremeToggle.checked = settings.extremeMode;
+    dom.volumeSlider.value = Math.round(masterVolume * 100);
+    dom.volumeValue.textContent = Math.round(masterVolume * 100) + '%';
     updateMuteButton();
 
     dom.settingsModal.classList.add('open');
@@ -591,6 +614,8 @@
     settings.breakDuration = parseInt(dom.breakSlider.value);
     settings.longBreakDuration = parseInt(dom.longBreakSlider.value);
     settings.soundEnabled = dom.soundToggle.checked;
+    masterVolume = parseInt(dom.volumeSlider.value) / 100;
+    settings.volume = masterVolume;
     
     const extremeChanged = settings.extremeMode !== dom.extremeToggle.checked;
     settings.extremeMode = dom.extremeToggle.checked;
@@ -657,7 +682,23 @@
     settings.soundEnabled = !settings.soundEnabled;
     dom.soundToggle.checked = settings.soundEnabled;
     updateMuteButton();
+    updateVolumeSliderState();
     saveSettings();
+  }
+
+  function updateVolumeSliderState() {
+    if (dom.volumeSlider) {
+      dom.volumeSlider.disabled = !settings.soundEnabled;
+      dom.volumeSlider.style.opacity = settings.soundEnabled ? '1' : '0.35';
+      dom.volumeSlider.style.cursor = settings.soundEnabled ? 'pointer' : 'not-allowed';
+    }
+  }
+
+  function sendNotification(title, body) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      try { new Notification(title, { body: body, icon: '💀' }); } catch(e) {}
+    }
   }
 
   function bindEvents() {
@@ -680,23 +721,26 @@
     dom.fullscreenBtn.addEventListener('click', toggleFullscreen);
 
     let holdTimeout;
-    dom.punishBtn.addEventListener('mousedown', function() {
+    function startHold() {
       dom.punishBtn.classList.add('holding');
       holdTimeout = setTimeout(function() {
         resetTimer();
         closeQuitModal();
       }, 3000);
-    });
-    
-    dom.punishBtn.addEventListener('mouseup', function() {
+    }
+    function endHold() {
       clearTimeout(holdTimeout);
       dom.punishBtn.classList.remove('holding');
+    }
+    dom.punishBtn.addEventListener('mousedown', startHold);
+    dom.punishBtn.addEventListener('mouseup', endHold);
+    dom.punishBtn.addEventListener('mouseleave', endHold);
+    dom.punishBtn.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      startHold();
     });
-    
-    dom.punishBtn.addEventListener('mouseleave', function() {
-      clearTimeout(holdTimeout);
-      dom.punishBtn.classList.remove('holding');
-    });
+    dom.punishBtn.addEventListener('touchend', endHold);
+    dom.punishBtn.addEventListener('touchcancel', endHold);
 
     dom.cancelQuitBtn.addEventListener('click', closeQuitModal);
 
@@ -717,9 +761,19 @@
     dom.longBreakSlider.addEventListener('input', function () {
       dom.longBreakValue.textContent = this.value;
     });
+    dom.volumeSlider.addEventListener('input', function () {
+      dom.volumeValue.textContent = this.value + '%';
+      masterVolume = parseInt(this.value) / 100;
+      settings.volume = masterVolume;
+      saveSettings();
+    });
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
+        if (dom.quitModal.classList.contains('open')) {
+          closeQuitModal();
+          return;
+        }
         if (dom.settingsModal.classList.contains('open')) {
           closeSettings();
           return;
@@ -735,8 +789,8 @@
         if (state.mode === 'running') pauseTimer();
         else startTimer();
       }
-      if (e.key === 'r' || e.key === 'R') resetTimer();
-      if (e.key === 's' || e.key === 'S') skipSession();
+      if (e.key === 'r' || e.key === 'R') attemptReset();
+      if (e.key === 's' || e.key === 'S') attemptSkip();
     });
 
     if (window.speechSynthesis) {
@@ -755,11 +809,17 @@
     state.timeRemaining = state.totalTime;
 
     updateMuteButton();
+    updateVolumeSliderState();
     updateDogTags();
     updateDisplay();
     updateButtons();
 
     dom.ringProgress.setAttribute('stroke-dasharray', CIRCUMFERENCE);
+
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }
 
   if (document.readyState === 'loading') {
