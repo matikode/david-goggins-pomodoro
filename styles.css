@@ -994,3 +994,252 @@ body.cookie-jar-mode .timer-ring-container {
   color: rgba(255, 255, 255, 0.45);
 }
 
+/* --- Settings Select --- */
+.settings-select {
+  width: 100%;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+}
+.settings-select:focus {
+  border-color: var(--color-accent);
+}
+
+/* --- Breathing Panel --- */
+.breathing-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  background: #09090b;
+  border-left: 1px solid #18181b;
+  color: #f4f4f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  transform: translateX(100%);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 50;
+}
+
+.breathing-panel.visible {
+  transform: translateX(0);
+}
+
+.app {
+  transition: margin-right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app.panel-open {
+  margin-right: 320px;
+}
+
+@media (max-width: 1023px) {
+  .app.panel-open {
+    margin-right: 0;
+  }
+}
+
+.breathing-header {
+  width: 100%;
+  margin-top: 1rem;
+  margin-bottom: 3rem;
+  border-bottom: 1px solid #27272a;
+  padding-bottom: 1rem;
+  text-align: center;
+}
+
+.breathing-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.breathing-header p {
+  font-size: 0.75rem;
+  color: #71717a;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.breathing-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+}
+
+.breathing-circle-container {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+.breathing-circle-static {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid #27272a;
+}
+
+.breathing-circle-anim {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(192, 57, 43, 0.1);
+  border: 2px solid var(--color-accent);
+  transition: transform 0.5s linear;
+}
+
+.breathing-circle-anim.scale-100 { transform: scale(1); }
+.breathing-circle-anim.scale-150 { transform: scale(1.5); }
+
+.breathing-circle-text {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.breathing-time {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.breathing-ready {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: #71717a;
+}
+
+.breathing-phase {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 3rem;
+}
+
+.breathing-phase p {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: opacity 0.3s ease;
+  color: #fff;
+}
+
+.opacity-0 { opacity: 0; }
+.opacity-100 { opacity: 1; }
+
+.breathing-controls {
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+/* Segmented Control (Replaces Select) */
+.segmented-control {
+  display: flex;
+  background-color: var(--color-btn-secondary);
+  border-radius: 4px;
+  padding: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: 100%;
+}
+
+.segment-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.segment-btn:hover {
+  color: var(--color-text);
+}
+
+.segment-btn.active {
+  background-color: var(--color-accent);
+  color: white;
+  font-weight: 600;
+}
+
+/* Breathing Tabs */
+.breathing-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: 100%;
+}
+
+.breathing-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.breathing-tab:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.breathing-tab.active {
+  background-color: var(--color-accent);
+  color: white;
+}

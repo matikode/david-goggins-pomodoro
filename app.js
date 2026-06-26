@@ -58,7 +58,9 @@
       breakDuration: DEFAULT_BREAK,
       longBreakDuration: DEFAULT_LONG_BREAK,
       soundEnabled: true,
+      heartbeatEnabled: true,
       extremeMode: false,
+      breathingMode: 'only_on_break',
       volume: 0.8
     };
   }
@@ -190,6 +192,20 @@
     dom.cancelQuitBtn = document.getElementById('cancelQuitBtn');
     dom.volumeSlider = document.getElementById('volumeSlider');
     dom.volumeValue = document.getElementById('volumeValue');
+    dom.heartbeatToggle = document.getElementById('heartbeatToggle');
+    
+    dom.breathingModeBtns = document.querySelectorAll('#breathingModeControl .segment-btn');
+    dom.btnFocusBreathing = document.getElementById('btnFocusBreathing');
+    dom.btnRelaxBreathing = document.getElementById('btnRelaxBreathing');
+    dom.breathingTechniqueLabel = document.getElementById('breathingTechniqueLabel');
+    dom.breathingPanel = document.getElementById('breathingPanel');
+    dom.breathingCircleAnim = document.getElementById('breathingCircleAnim');
+    dom.breathingTime = document.getElementById('breathingTime');
+    dom.breathingReady = document.getElementById('breathingReady');
+    dom.breathingPhaseText = document.getElementById('breathingPhaseText');
+    dom.startBreathingBtn = document.getElementById('startBreathingBtn');
+    dom.stopBreathingBtn = document.getElementById('stopBreathingBtn');
+    dom.app = document.querySelector('.app');
   }
 
   function formatTime(seconds) {
@@ -205,8 +221,8 @@
     const offset = CIRCUMFERENCE * (1 - fraction);
     dom.ringProgress.setAttribute('stroke-dashoffset', offset);
 
-    // Cookie Jar Mode (last 30 seconds of work)
-    const isCookieJar = state.sessionType === 'work' && state.timeRemaining <= 30 && state.timeRemaining > 0;
+    // Cookie Jar Mode (last 15 seconds of work)
+    const isCookieJar = state.sessionType === 'work' && state.timeRemaining <= 15 && state.timeRemaining > 0;
     document.body.classList.toggle('cookie-jar-mode', isCookieJar);
     if (isCookieJar) {
       startHeartbeat();
@@ -402,7 +418,7 @@
   }
 
   function startHeartbeat() {
-    if (heartbeatInterval) return;
+    if (heartbeatInterval || settings.heartbeatEnabled === false) return;
     heartbeatInterval = setInterval(function() {
       playHeartbeatTone();
       setTimeout(playHeartbeatTone, 150);
@@ -492,6 +508,7 @@
     updateButtons();
     updateDogTags();
     updateDisplay();
+    updateBreathingVisibility();
   }
 
   function skipSession() {
@@ -529,6 +546,7 @@
 
     updateButtons();
     updateDisplay();
+    updateBreathingVisibility();
 
     sendNotification(
       state.sessionType === 'work' ? '💀 Back to work!' : '🏆 Session complete!',
@@ -593,7 +611,14 @@
     dom.breakValue.textContent = settings.breakDuration;
     dom.longBreakValue.textContent = settings.longBreakDuration;
     dom.soundToggle.checked = settings.soundEnabled;
+    if (dom.heartbeatToggle) dom.heartbeatToggle.checked = settings.heartbeatEnabled !== false;
     dom.extremeToggle.checked = settings.extremeMode;
+    if (dom.breathingModeBtns) {
+      const mode = settings.breathingMode || 'only_on_break';
+      dom.breathingModeBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === mode);
+      });
+    }
     dom.volumeSlider.value = Math.round(masterVolume * 100);
     dom.volumeValue.textContent = Math.round(masterVolume * 100) + '%';
     updateMuteButton();
@@ -614,14 +639,21 @@
     settings.breakDuration = parseInt(dom.breakSlider.value);
     settings.longBreakDuration = parseInt(dom.longBreakSlider.value);
     settings.soundEnabled = dom.soundToggle.checked;
+    if (dom.heartbeatToggle) settings.heartbeatEnabled = dom.heartbeatToggle.checked;
+    if (settings.heartbeatEnabled === false) stopHeartbeat();
     masterVolume = parseInt(dom.volumeSlider.value) / 100;
     settings.volume = masterVolume;
     
     const extremeChanged = settings.extremeMode !== dom.extremeToggle.checked;
     settings.extremeMode = dom.extremeToggle.checked;
+    if (dom.breathingModeBtns) {
+      const activeBtn = document.querySelector('#breathingModeControl .segment-btn.active');
+      if (activeBtn) settings.breathingMode = activeBtn.dataset.value;
+    }
     
     saveSettings();
     updateMuteButton();
+    updateBreathingVisibility();
     if (extremeChanged) updateButtons();
 
     if (changed && state.mode === 'idle') {
@@ -701,6 +733,123 @@
     }
   }
 
+  let breathingState = {
+    isActive: false,
+    technique: 'focus',
+    phaseIndex: 0,
+    timeLeft: 4,
+    intervalId: null
+  };
+
+  const FOCUS_PHASES = [
+    { text: 'Inhale...', scaleClass: 'scale-150', duration: 4 },
+    { text: 'Hold...', scaleClass: 'scale-150', duration: 4 },
+    { text: 'Exhale...', scaleClass: 'scale-100', duration: 4 },
+    { text: 'Hold...', scaleClass: 'scale-100', duration: 4 }
+  ];
+
+  const RELAX_PHASES = [
+    { text: 'Inhale...', scaleClass: 'scale-150', duration: 4 },
+    { text: 'Hold...', scaleClass: 'scale-150', duration: 7 },
+    { text: 'Exhale...', scaleClass: 'scale-100', duration: 8 }
+  ];
+
+  function updateBreathingVisibility() {
+    const isBreak = state.sessionType === 'break';
+    const mode = settings.breathingMode || 'only_on_break';
+    
+    let isVisible = false;
+    if (mode === 'always_visible') isVisible = true;
+    else if (mode === 'only_on_break' && isBreak) isVisible = true;
+
+    if (dom.breathingPanel) {
+      dom.breathingPanel.classList.toggle('visible', isVisible);
+      dom.breathingPanel.setAttribute('aria-hidden', !isVisible);
+    }
+    
+    if (dom.app) {
+      if (window.innerWidth >= 1024) {
+        dom.app.classList.toggle('panel-open', isVisible);
+      } else {
+        dom.app.classList.remove('panel-open');
+      }
+    }
+
+    if (!isVisible && breathingState.isActive) {
+      stopBreathing();
+    }
+  }
+
+  function startBreathing() {
+    if (breathingState.isActive) return;
+    breathingState.isActive = true;
+    breathingState.phaseIndex = 0;
+    
+    const phases = breathingState.technique === 'focus' ? FOCUS_PHASES : RELAX_PHASES;
+    breathingState.timeLeft = phases[0].duration;
+    
+    dom.startBreathingBtn.style.display = 'none';
+    dom.stopBreathingBtn.style.display = '';
+    dom.breathingReady.style.display = 'none';
+    dom.breathingTime.style.display = '';
+    
+    dom.breathingPhaseText.classList.remove('opacity-0');
+    dom.breathingPhaseText.classList.add('opacity-100');
+    
+    updateBreathingUI();
+    
+    breathingState.intervalId = setInterval(() => {
+      breathingState.timeLeft--;
+      if (breathingState.timeLeft < 1) {
+        const phases = breathingState.technique === 'focus' ? FOCUS_PHASES : RELAX_PHASES;
+        breathingState.phaseIndex = (breathingState.phaseIndex + 1) % phases.length;
+        breathingState.timeLeft = phases[breathingState.phaseIndex].duration;
+      }
+      updateBreathingUI();
+    }, 1000);
+  }
+
+  function stopBreathing() {
+    if (!breathingState.isActive) return;
+    breathingState.isActive = false;
+    clearInterval(breathingState.intervalId);
+    breathingState.intervalId = null;
+    
+    dom.startBreathingBtn.style.display = '';
+    dom.stopBreathingBtn.style.display = 'none';
+    dom.breathingReady.style.display = '';
+    dom.breathingTime.style.display = 'none';
+    
+    dom.breathingPhaseText.classList.add('opacity-0');
+    dom.breathingPhaseText.classList.remove('opacity-100');
+    
+    dom.breathingCircleAnim.style.transitionDuration = '0.5s';
+    dom.breathingCircleAnim.className = 'breathing-circle-anim scale-100';
+  }
+
+  function updateBreathingUI() {
+    dom.breathingTime.textContent = breathingState.timeLeft;
+    
+    const phases = breathingState.technique === 'focus' ? FOCUS_PHASES : RELAX_PHASES;
+    const phase = phases[breathingState.phaseIndex];
+    dom.breathingPhaseText.textContent = phase.text;
+    
+    dom.breathingCircleAnim.style.transitionDuration = `${phase.duration}s`;
+    dom.breathingCircleAnim.className = `breathing-circle-anim ${phase.scaleClass}`;
+  }
+
+  function setBreathingTechnique(type) {
+    breathingState.technique = type;
+    if (dom.btnFocusBreathing) dom.btnFocusBreathing.classList.toggle('active', type === 'focus');
+    if (dom.btnRelaxBreathing) dom.btnRelaxBreathing.classList.toggle('active', type === 'relax');
+    
+    if (dom.breathingTechniqueLabel) {
+      dom.breathingTechniqueLabel.textContent = type === 'focus' ? 'FOCUS (BOX 4-4-4-4)' : 'RELAXATION (4-7-8)';
+    }
+    
+    if (breathingState.isActive) stopBreathing();
+  }
+
   function bindEvents() {
     // Add click sound to all buttons
     document.querySelectorAll('.btn, .btn-icon').forEach(function(btn) {
@@ -709,6 +858,22 @@
 
     dom.startBtn.addEventListener('click', startTimer);
     dom.pauseBtn.addEventListener('click', pauseTimer);
+
+    if (dom.startBreathingBtn) {
+      dom.startBreathingBtn.addEventListener('click', startBreathing);
+      dom.stopBreathingBtn.addEventListener('click', stopBreathing);
+    }
+    if (dom.btnFocusBreathing) dom.btnFocusBreathing.addEventListener('click', () => setBreathingTechnique('focus'));
+    if (dom.btnRelaxBreathing) dom.btnRelaxBreathing.addEventListener('click', () => setBreathingTechnique('relax'));
+    
+    if (dom.breathingModeBtns) {
+      dom.breathingModeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          dom.breathingModeBtns.forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+    }
     dom.resetBtn.addEventListener('click', attemptReset);
     dom.skipBtn.addEventListener('click', attemptSkip);
     dom.muteBtn.addEventListener('click', toggleMute);
@@ -813,6 +978,7 @@
     updateDogTags();
     updateDisplay();
     updateButtons();
+    updateBreathingVisibility();
 
     dom.ringProgress.setAttribute('stroke-dasharray', CIRCUMFERENCE);
 

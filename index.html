@@ -183,6 +183,14 @@
           </label>
         </div>
 
+        <div class="setting-group setting-toggle">
+          <label class="setting-label" for="heartbeatToggle">Heartbeat Sound (End)</label>
+          <label class="switch">
+            <input type="checkbox" id="heartbeatToggle" checked>
+            <span class="switch-track"></span>
+          </label>
+        </div>
+
         <div class="setting-group">
           <label class="setting-label" for="volumeSlider">
             Volume: <span id="volumeValue">80%</span>
@@ -199,6 +207,17 @@
             <input type="checkbox" id="extremeToggle">
             <span class="switch-track"></span>
           </label>
+        </div>
+
+        <div class="setting-group" style="margin-top: 0.5rem;">
+          <label class="setting-label">
+            Panel Visibility
+          </label>
+          <div class="segmented-control" id="breathingModeControl">
+            <button class="segment-btn active" data-value="only_on_break">Breaks Only</button>
+            <button class="segment-btn" data-value="always_visible">Always</button>
+            <button class="segment-btn" data-value="off">Off</button>
+          </div>
         </div>
       </div>
     </div>
@@ -252,6 +271,37 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <div id="breathingPanel" class="breathing-panel" aria-hidden="true">
+    <div class="breathing-header">
+      <h2>STAY HARD</h2>
+      <p id="breathingTechniqueLabel" style="font-size: 0.75rem; letter-spacing: 1px;">FOCUS (BOX 4-4-4-4)</p>
+    </div>
+
+    <div class="breathing-content">
+      <div class="breathing-tabs">
+        <button id="btnFocusBreathing" class="breathing-tab active" data-type="focus">FOCUS</button>
+        <button id="btnRelaxBreathing" class="breathing-tab" data-type="relax">RELAX</button>
+      </div>
+      <div class="breathing-circle-container">
+        <div class="breathing-circle-static"></div>
+        <div id="breathingCircleAnim" class="breathing-circle-anim scale-100"></div>
+        <div class="breathing-circle-text">
+          <span id="breathingTime" class="breathing-time" style="display:none">4</span>
+          <span id="breathingReady" class="breathing-ready">READY</span>
+        </div>
+      </div>
+
+      <div class="breathing-phase">
+        <p id="breathingPhaseText" class="opacity-0">Inhale...</p>
+      </div>
+
+      <div class="breathing-controls">
+        <button id="startBreathingBtn" class="btn btn-start w-full" style="font-size: 0.9rem; padding: 0.5rem 1rem;">START</button>
+        <button id="stopBreathingBtn" class="btn btn-reset w-full" style="display:none; font-size: 0.9rem; padding: 0.5rem 1rem;">STOP</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>
